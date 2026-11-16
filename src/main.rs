@@ -2,6 +2,10 @@ fn main() {
     println!("Hello, world!");
 }
 
+fn parse_blocks(prog: String) {
+    
+}
+
 struct Node {
     rule: Vec<u64>,
     stack: Vec<u64>,
