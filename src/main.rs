@@ -17,7 +17,7 @@ impl Clone for Node {
 }
 
 impl Node {
-    pub fn forward(&mut self, data1: Option<u64>, data2: Option<u64>) -> (u64, u64) {
+    pub fn forward(&mut self, data1: Option<u64>, data2: Option<u64>) -> u64 {
         if let Some(a) = data1 {
             self.stack.push(a);
         }
@@ -26,20 +26,13 @@ impl Node {
         }
         self.execute();
         let x;
-        if let Some(a) = self.stack.pop {
+        if let Some(a) = self.stack.pop() {
             x = a
         }
         else {
             x = 0;
         }
-        let y: u64;
-        if let Some(a) = self.stack.pop {
-            y = a
-        }
-        else {
-            y = 0;
-        }
-        (x, y)
+        x
     }
 
     fn execute(&mut self) {
@@ -56,7 +49,7 @@ impl Node {
     }
 
     fn flash(&mut self) {
-        self.rule = self.stack;
+        self.rule = self.stack.clone();
         self.stack = vec![];
     }
 }
@@ -67,32 +60,19 @@ enum Branch {
     End(Box<Node>)
 }
 
-trait Pass {
-    pub fn forward(&mut self, data: u64) -> u64;
+pub trait Pass {
+    fn forward(&mut self, data: u64) -> u64;
 }
 
 impl Pass for Branch {
     fn forward(&mut self, data: u64) -> u64 {
-        match self {
-            
-        }
+        let x = match self {
+            Branch::Live(next, past1, past2) => {next.forward(Some(past1.forward(data)), Some(past2.forward(data)))},
+            Branch::Through(next, past) => {next.forward(Some(past.forward(data)), None)},
+            Branch::End(next) => {next.forward(Some(data), None)},
+        };
+        x
     }
 }
 
 
-    fn forward(&mut self, data: u64) -> u64 {
-        self.0.forward(Some(data), None)
-    }
-}
-
-impl Pass for Branch::Through {
-    fn forward(&mut self, data: u64) -> u64 {
-        self.0.forward(Some(self.1.forward(data)))
-    }
-}
-
-impl Pass for Branch::Live {
-    fn forward(&mut self, data: u64) -> u64 {
-        self.0.forward(Some(self.1.forward(data)), Some(self.2.forward(data)))
-    }
-}
