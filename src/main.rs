@@ -26,9 +26,7 @@ impl Clone for Node {
 
 impl Node {
     pub fn forward(&mut self, mut data: Vec<u64>) -> Vec<u64> {
-        while let Some(a) = data.pop() {
-            self.stack.push(a);
-        }
+        self.stack.append(&mut data);
         self.execute();
         let mut out_vec: Vec<u64> = vec![];
         let num_read;
@@ -47,9 +45,9 @@ impl Node {
     }
 
     fn execute(&mut self) -> Option<()> {
-        for code in self.stack.iter_mut() {
+        for code in self.rule.iter_mut() {
             match code {
-                0 => {self.stack.push(self.stack.pop()?+self.stack.pop()?)}, //add
+                0 => { self.stack.push(self.stack.pop()? + self.stack.pop()?)}, //add
                 1 => {},
                 2 => {},
 
