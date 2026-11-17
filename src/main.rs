@@ -46,17 +46,19 @@ impl Node {
         out_vec
     }
 
-    fn execute(&mut self) {
+    fn execute(&mut self) -> Option<()> {
         for code in self.stack.iter_mut() {
             match code {
-                0 => {},
+                0 => {self.stack.push(self.stack.pop()?+self.stack.pop()?)}, //add
                 1 => {},
                 2 => {},
 
-                42 => {self.flash(); break}
-                _ => {},
+                42 => {self.flash(); break;}
+                _ => break,
             }
-        }
+            
+        };
+        Some(())
     }
 
     fn flash(&mut self) {
