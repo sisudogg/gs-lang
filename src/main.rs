@@ -47,7 +47,7 @@ impl Node {
     fn execute(&mut self) -> Option<()> {
         for code in self.rule.iter_mut() {
             match code {
-                0 => { self.stack.push(self.stack.pop()? + self.stack.pop()?)}, //add
+                0 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a + b)}, //add
                 1 => {},
                 2 => {},
 
