@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, mpsc::{Sender, Receiver}};
+use std::sync::{Arc, Mutex};
 
 fn main() {
     println!("Hello, world!");
@@ -25,19 +25,25 @@ impl Clone for Node {
 }
 
 impl Node {
-    pub fn forward(&mut self, mut data: Vec<u64>) -> u64 {
+    pub fn forward(&mut self, mut data: Vec<u64>) -> Vec<u64> {
         while let Some(a) = data.pop() {
             self.stack.push(a);
         }
         self.execute();
-        let x;
-        if let Some(a) = self.stack.pop() {
-            x = a
+        let mut out_vec: Vec<u64> = vec![];
+        let num_read;
+        if let Some(top) = self.stack.pop() {
+            num_read = top;
+            for _ in 0..num_read {
+                if let Some(next_value) = self.stack.pop() {
+                    out_vec.push(next_value);
+                }
+            }
         }
         else {
-            x = 0;
+            out_vec.push(0);
         }
-        x
+        out_vec
     }
 
     fn execute(&mut self) {
@@ -59,13 +65,12 @@ impl Node {
     }
 
     pub fn run (&mut self, data: Vec<u64>) -> Vec<u64> {
-        let outVec = vec![];
+        let mut out_vec = vec![];
         while let Some(a) = (self.downs.iter().next()) {
-            let b = **a;
-            b.lock()?;
-            outVec.append(b.run(data.clone()));
+            let b = a;
+            out_vec.append(&mut b.lock().unwrap().run(data.clone()));
         }
-        self.forward(outVec)
+        self.forward(out_vec)
     }
 }
 
