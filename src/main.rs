@@ -45,18 +45,23 @@ impl Node {
     }
 
     fn execute(&mut self) -> Option<()> {
-        for intruction in 0..self.rule.len() {
-            match code {
-                0 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a + b) }, //add
-                1 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a - b) },
-                2 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a * b) },
-                3 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a / b) },
-                4 => { if self.stack.pop()? == 0 { iter_codes.skip(self.stack.pop()? as usize); } },
+        let mut i: usize = 0;
+        while i <= self.rule.len() {
+            if let Some(code) = self.rule.get(i) {
+                match code {
+                    0 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a + b) }, //add
+                    1 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a - b) }, //sub
+                    2 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a * b) }, //mul
+                    3 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a / b) }, //div
+                    4 => { i += self.rule.get([i+1])? }
+                    5 => { if self.stack.pop()? == 0 { i += (*self.rule.get(i+1)? as usize); } }, //jmp0
 
-                42 => {self.flash(); break;}
-                _ => break,
-            }
-            
+
+                    42 => {self.flash(); break;}
+                    _ => break,
+                }
+                i += 1;
+        }
         };
         Some(())
     }
