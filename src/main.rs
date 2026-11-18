@@ -45,11 +45,13 @@ impl Node {
     }
 
     fn execute(&mut self) -> Option<()> {
-        for code in self.rule.iter_mut() {
+        for intruction in 0..self.rule.len() {
             match code {
-                0 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a + b)}, //add
-                1 => {},
-                2 => {},
+                0 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a + b) }, //add
+                1 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a - b) },
+                2 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a * b) },
+                3 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a / b) },
+                4 => { if self.stack.pop()? == 0 { iter_codes.skip(self.stack.pop()? as usize); } },
 
                 42 => {self.flash(); break;}
                 _ => break,
