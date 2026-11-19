@@ -14,26 +14,33 @@ fn assemble(filename: String) -> Result<String, Box<dyn std::error::Error>> {
     file.read_to_string(&mut content)?;
     let instructions: Vec<&str> = content.split("\n").collect();
     let mut output: Vec<u64> = vec![];
-    let mut parser = Parser::new()
-    for line in instructions {
-        output.append(parser.parse(line))
+    let mut parser = Parser::new();
+    for (index, line) in instructions.iter().enumerate() {
+        parser.parse(line, index.try_into()?)?;
     }
+    output.append(&mut parser.get());
     Ok(String::new())
 }
 
 
 struct Parser {
-    labels: HashMap<String, u64>
+    labels: HashMap<String, u64>,
+    binary: Vec<u64>
 }
 
 impl Parser {
     pub fn new() -> Parser {
         Parser {
-            labels: HashMap::new()
+            labels: HashMap::new(),
+            binary: vec![],
         }
     }
 
-    pub fn parse(&mut self, line: &str, index: u64) -> Result<Vec<u64>, Box<dyn std::error::Error>> {
+    pub fn get(&self) -> Vec<u64> {
+        self.binary.clone()
+    }
+
+    pub fn parse(&mut self, line: &str, index: u64) -> Result<(), Box<dyn std::error::Error>> {
         let instructions: Vec<&str> = line.split(' ').collect();
         let mut output: Vec<u64> = vec![];
         match instructions[0] {
@@ -64,11 +71,11 @@ impl Parser {
             "CALL" => {output.push(0x42); output.push(self.labels[instructions[1]])},
             "RET" => output.push(0x43),
 
-            "LABEL" => {if let Some(val) = self.labels.get_mut(instructions[1]) { *val = index; }; output.push(0x44)},
+            "LABEL" => {if let Some(val) = self.labels.get_mut(instructions[1]) { *val = (self.binary.len() + 1) as u64; }; output.push(0x44)},
 
             _ => { output.push(0x00) }
         }
-        Ok(output)
+        Ok(())
     }
 }
 
