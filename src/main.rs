@@ -64,7 +64,7 @@ impl Parser {
             "CALL" => {output.push(0x42); output.push(self.labels[instructions[1]])},
             "RET" => output.push(0x43),
 
-            "LABEL" => {self.labels[instructions[1]] = index; output.push(0x44)},
+            "LABEL" => {if let Some(val) = self.labels.get_mut(instructions[1]) { *val = index; }; output.push(0x44)},
 
             _ => { output.push(0x00) }
         }
