@@ -23,8 +23,44 @@ struct Parser {
 }
 
 impl Parser {
-    pub fn parse(&mut self, line: &str) -> Vec<u64> {
-        vec![]
+    pub fn parse(&mut self, line: &str) -> Result<Vec<u64>, Box<dyn std::error::Error>> {
+        let instructions: Vec<&str> = line.split(' ').collect();
+        let mut output: Vec<u64> = vec![];
+        match instructions[0] {
+            "SKIP" => output.push(0x00),
+            "HALT" => output.push(0x01),
+            "PSH0" => output.push(0x02),
+
+            "ADD" => output.push(0x10),
+            "SUB" => output.push(0x11),
+            "MUL" => output.push(0x12),
+            "DIV" => output.push(0x13),
+
+            "AND" => output.push(0x14),
+            "OR" => output.push(0x15),
+            "XOR" => output.push(0x16),
+            "NOT" => output.push(0x17),
+
+            "SHL" => output.push(0x18),
+            "SHR" => output.push(0x19),
+
+            "PUSH" => {output.push(0x20); output.push(instructions[1].parse::<u64>()?)},
+            "POP" => output.push(0x21),
+            "DUP" => output.push(0x22),
+            "SWAP" => output.push(0x23),
+
+
+
+
+
+
+
+
+
+
+            _ => { output.push(0x00) }
+        }
+        Ok(output)
     }
 }
 
