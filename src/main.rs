@@ -13,7 +13,11 @@ fn assemble(filename: String) -> Result<String, Box<dyn std::error::Error>> {
     let mut content = String::new();
     file.read_to_string(&mut content)?;
     let instructions: Vec<&str> = content.split("\n").collect();
-    let output: Vec<u64> = vec![];
+    let mut output: Vec<u64> = vec![];
+    let mut parser = Parser::new()
+    for line in instructions {
+        output.append(parser.parse(line))
+    }
     Ok(String::new())
 }
 
@@ -23,7 +27,13 @@ struct Parser {
 }
 
 impl Parser {
-    pub fn parse(&mut self, line: &str) -> Result<Vec<u64>, Box<dyn std::error::Error>> {
+    pub fn new() -> Parser {
+        Parser {
+            labels: HashMap::new()
+        }
+    }
+
+    pub fn parse(&mut self, line: &str, index: u64) -> Result<Vec<u64>, Box<dyn std::error::Error>> {
         let instructions: Vec<&str> = line.split(' ').collect();
         let mut output: Vec<u64> = vec![];
         match instructions[0] {
@@ -49,14 +59,12 @@ impl Parser {
             "DUP" => output.push(0x22),
             "SWAP" => output.push(0x23),
 
+            "JMP" => {output.push(0x40); output.push(self.labels[instructions[1]])},
+            "JZ" => {output.push(0x41); output.push(self.labels[instructions[1]])},
+            "CALL" => {output.push(0x42); output.push(self.labels[instructions[1]])},
+            "RET" => output.push(0x43),
 
-
-
-
-
-
-
-
+            "LABEL" => {self.labels[instructions[1]] = index; output.push(0x44)},
 
             _ => { output.push(0x00) }
         }
@@ -81,6 +89,14 @@ impl Clone for Node {
 }
 
 impl Node {
+    pub fn new(rule: Vec<u64>, subordinates: Vec<Arc<Mutex<Node>>>) -> Node {
+        Node {
+            rule: rule,
+            stack: vec![],
+            downs: subordinates,
+        }
+    }
+
     pub fn forward(&mut self, mut data: Vec<u64>) -> Vec<u64> {
         self.stack.append(&mut data);
         self.execute();
@@ -138,6 +154,7 @@ impl Node {
                     0x41 => { if self.stack.pop()? == 0 { i += (*self.rule.get(i+1)? as usize); } }, //jz
                     0x42 => {ret.push(i); i = self.rule[i+1] as usize;  }, //call
                     0x43 => { i = ret.pop()? }, //return
+                    0x44 => {}, //label
                     //risky operation: 0x48 => { i += self.stack.pop()? as usize }, //jmps
                     //risky operation: 0x49 => { if self.stack.pop()? == 0 { i += self.stack.pop()? as usize } }, //jzs
 
@@ -160,6 +177,9 @@ impl Node {
         while let Some(a) = (self.downs.iter().next()) {
             let b = a;
             out_vec.append(&mut b.lock().unwrap().run(data.clone()));
+        }
+        if out_vec.len() == 0 {
+            out_vec = data.clone()
         }
         self.forward(out_vec)
     }
