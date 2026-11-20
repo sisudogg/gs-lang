@@ -71,7 +71,7 @@ impl Parser {
             "CALL" => {output.push(0x42); output.push(self.labels[instructions[1]])},
             "RET" => output.push(0x43),
 
-            "LABEL" => {if let Some(val) = self.labels.get_mut(instructions[1]) { *val = (self.binary.len() + 1) as u64; }; output.push(0x44)},
+            "LABEL" => {if let Some(val) = self.labels.get_mut(instructions[1]) {*val = self.binary.len() as u64}; output.push(0x44)},
 
             _ => { output.push(0x00) }
         }
@@ -161,7 +161,8 @@ impl Node {
                     0x41 => { if self.stack.pop()? == 0 { i += (*self.rule.get(i+1)? as usize); } }, //jz
                     0x42 => {ret.push(i); i = self.rule[i+1] as usize;  }, //call
                     0x43 => { i = ret.pop()? }, //return
-                    0x44 => {}, //label
+                    0x44 => {println!("Reached Label @{}", i)}, //label
+                    0x45 => {i += 1}, //var
                     //risky operation: 0x48 => { i += self.stack.pop()? as usize }, //jmps
                     //risky operation: 0x49 => { if self.stack.pop()? == 0 { i += self.stack.pop()? as usize } }, //jzs
 
