@@ -122,7 +122,9 @@ impl Parser {
     }
 
     pub fn load(&mut self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
-        let mut infile = File::open(filename)?;
+        let mut name = filename.clone();
+        name.push_str(".asm");
+        let mut infile = File::open(name)?;
         infile.read_to_string(&mut self.assembly)?;
         Ok(())
     }
