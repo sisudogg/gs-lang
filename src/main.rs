@@ -8,24 +8,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn assemble(filename: String) -> Result<String, Box<dyn std::error::Error>> {
-    let mut file = File::open(filename)?;
-    let mut content = String::new();
-    file.read_to_string(&mut content)?;
-    let instructions: Vec<&str> = content.split("\n").collect();
-    let mut output: Vec<u64> = vec![];
+fn assemble(filename: &String) -> Result<String, Box<dyn std::error::Error>> {
     let mut parser = Parser::new();
-    for (index, line) in instructions.iter().enumerate() {
-        parser.parse(line, index.try_into()?)?;
-    }
-    output.append(&mut parser.get());
-    Ok(String::new())
+    parser.load(&filename)?;
+    parser.assemble()?;
+    let mut outname = filename.clone();
+    outname = outname.trim_suffix(".asm").to_string();
+    parser.save(&outname)?;
+    Ok(outname)
 }
 
 
 struct Parser {
     labels: HashMap<String, u64>,
-    binary: Vec<u64>
+    binary: Vec<u64>,
+    assembly: String,
+    variables: HashMap<String, u64>,
+    offset: u64,
 }
 
 impl Parser {
@@ -33,14 +32,69 @@ impl Parser {
         Parser {
             labels: HashMap::new(),
             binary: vec![],
+            assembly: String::new(),
+            variables: HashMap::new(),
+            offset: 0,
         }
+    }
+
+    pub fn link(&mut self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
+        let mut binfile = File::open(&filename)?;
+        let mut readbytes = Vec::new();
+        binfile.read_to_end(&mut readbytes);
+
+        //self.binary.append();
+        //let label_file = filename.clone().add;
+        //self.load_labels();
+        Ok(())
+    }
+
+    fn load_labels(&mut self, dict: HashMap<String, u64>) -> Result<(), Box<dyn std::error::Error>> {
+        let binding = self.labels.clone();
+        let keys = binding.keys();
+        for key in keys {
+            if let Some(val) = self.labels.get_mut(key) {
+                *val += self.offset;
+            };
+        }
+        self.labels.extend(dict.into_iter());
+        Ok(())
+    }
+
+    fn load_variables(&mut self, dict: HashMap<String, u64>) {
+        self.variables.extend(dict.into_iter());
+    }
+
+    pub fn assemble(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let read: Vec<String> = self.assembly.split('\n').map(|s| s.to_string()).collect();
+        let lines: Vec<&str> = read.iter().map(|s| s.as_str()).collect();
+        for line in lines {
+            self.parse(line)?;
+        }
+        Ok(())
+    }
+
+    pub fn load(&mut self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
+        let mut infile = File::open(filename)?;
+        infile.read_to_string(&mut self.assembly)?;
+        Ok(())
     }
 
     pub fn get(&self) -> Vec<u64> {
         self.binary.clone()
     }
 
-    pub fn parse(&mut self, line: &str, index: u64) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save(&self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
+        let mut outfile = File::create(filename)?;
+        let mut outvec: Vec<u8> = vec![];
+        for num in self.get() {
+            outvec.append(&mut Vec::from(num.to_le_bytes()));
+        }
+        outfile.write_all(&outvec)?;
+        Ok(())
+    }
+
+    pub fn parse(&mut self, line: &str) -> Result<(), Box<dyn std::error::Error>> {
         let instructions: Vec<&str> = line.split(' ').collect();
         let mut output: Vec<u64> = vec![];
         match instructions[0] {
@@ -72,9 +126,18 @@ impl Parser {
             "RET" => output.push(0x43),
 
             "LABEL" => {if let Some(val) = self.labels.get_mut(instructions[1]) {*val = self.binary.len() as u64}; output.push(0x44)},
+            "VAR" => {if let Some(val) = self.variables.get_mut(instructions[1]) {*val = self.binary.len() as u64}; output.push(0x45)},
+            "PUSHVAR" => {if let Some(val) = self.variables.get_mut(instructions[1]) {output.push(0x46); output.push(*val)}}
+            "POPVAR" => {if let Some(val) = self.variables.get_mut(instructions[1]) {output.push(0x47); output.push(*val)}},
+
+            "PRINT64" => {output.push(0x50)},
+            "PRINT8X8" => {output.push(0x51)},
+            "PRINTC64" => {output.push(0x52)},
+            "PRINTC8X8" => {output.push(0x53)},
 
             _ => { output.push(0x00) }
         }
+        self.binary.append(&mut output);
         Ok(())
     }
 }
@@ -161,10 +224,21 @@ impl Node {
                     0x41 => { if self.stack.pop()? == 0 { i += (*self.rule.get(i+1)? as usize); } }, //jz
                     0x42 => {ret.push(i); i = self.rule[i+1] as usize;  }, //call
                     0x43 => { i = ret.pop()? }, //return
+
+                    //Labels and variables
                     0x44 => {println!("Reached Label @{}", i)}, //label
-                    0x45 => {i += 1}, //var
-                    //risky operation: 0x48 => { i += self.stack.pop()? as usize }, //jmps
-                    //risky operation: 0x49 => { if self.stack.pop()? == 0 { i += self.stack.pop()? as usize } }, //jzs
+                    0x45 => {i += 1}, //var //don't execute data of var
+                    0x46 => {self.stack.push(*self.rule.get(*self.rule.get(i+1)? as usize)?)}, //push variable to stack
+                    0x47 => {let index = *self.rule.get(i+1)? as usize; self.rule[index] = self.stack.pop()?} //pop and write to variable
+                    //risky operation: 0x48 => { i += self.stack.pop()? as usize }, //jmps //Jump to index at top of stack
+                    //risky operation: 0x49 => { if self.stack.pop()? == 0 { i += self.stack.pop()? as usize } }, //jzs //Jump to value 2nd of stack if 1st = 0
+
+                    //Basic IO operations
+                    0x50 => {print!("{}", self.stack.pop()?)},
+                    0x51 => {let bytes = self.stack.pop()?.to_le_bytes(); for num in bytes {print!("{}", num)}},
+                    0x52 => {},
+                    0x53 => {let bytes = self.stack.pop()?.to_le_bytes(); for num in bytes { print!("{}", char::from(num))}},
+
 
                     42000000 => {self.flash(); break;},
                     _ => {},

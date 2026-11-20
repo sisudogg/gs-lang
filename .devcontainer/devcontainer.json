@@ -5,6 +5,6 @@
       "version": "latest",
       "profile": "complete"
     },
-  "runArgs": ["--oom-score-adj=200"]
+  
   }
 }
