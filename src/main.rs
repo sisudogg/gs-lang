@@ -1,20 +1,34 @@
 use std::collections::HashMap;
+use std::env::var;
+use std::hash::Hash;
 use std::sync::{Arc, Mutex};
 use std::fs::{File};
 use std::io::{self, Write, Read};
+use savefile::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Hello, world!");
     Ok(())
 }
 
-fn assemble(filename: &String) -> Result<String, Box<dyn std::error::Error>> {
+fn assemble(filename: &String, linkable: bool) -> Result<String, Box<dyn std::error::Error>> {
     let mut parser = Parser::new();
     parser.load(&filename)?;
     parser.assemble()?;
     let mut outname = filename.clone();
     outname = outname.trim_suffix(".asm").to_string();
     parser.save(&outname)?;
+    if linkable {
+        let mut label_name = filename.clone();
+        label_name.push_str(".label");
+        save_file(label_name, 0, &parser.get_labels())?;
+
+
+        let mut variable_name = filename.clone();
+        variable_name.push_str(".var");
+        save_file(variable_name, 0, &parser.get_variables())?;
+
+    }
     Ok(outname)
 }
 
@@ -39,18 +53,44 @@ impl Parser {
     }
 
     pub fn link(&mut self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
-        let mut binfile = File::open(&filename)?;
+        let mut bin_name = filename.clone();
+        bin_name.push_str(".bin");
+        let mut binfile = File::open(&bin_name)?;
         let mut readbytes = Vec::new();
-        binfile.read_to_end(&mut readbytes);
+        binfile.read_to_end(&mut readbytes)?;
 
-        //self.binary.append();
-        //let label_file = filename.clone().add;
-        //self.load_labels();
+        let mut parsed_vals = vec![];
+        for chunk in readbytes.chunks(8) {
+            if chunk.len() == 8 {
+                let arr: [u8; 8] = chunk.try_into()?;
+                parsed_vals.push(u64::from_le_bytes(arr));
+            }
+        }
+
+        self.binary.append(&mut parsed_vals);
+        let mut label_name = filename.clone();
+        label_name.push_str(".label");
+        let label_dict: HashMap<String, u64> = load_file(label_name, 0)?;
+
+        let mut variable_name = filename.clone();
+        variable_name.push_str(".var");
+        let variable_dict: HashMap<String, u64> = load_file(variable_name, 0)?;
+        
+        self.load_labels(label_dict);
+        self.load_variables(variable_dict);
         Ok(())
     }
 
+    pub fn get_labels(&self) -> HashMap<String, u64> {
+        self.labels.clone()
+    }
+
+    pub fn get_variables(&self) -> HashMap<String, u64> {
+        self.variables.clone()
+    }
+
     fn load_labels(&mut self, dict: HashMap<String, u64>) -> Result<(), Box<dyn std::error::Error>> {
-        let binding = self.labels.clone();
+        let binding = dict.clone();
         let keys = binding.keys();
         for key in keys {
             if let Some(val) = self.labels.get_mut(key) {
@@ -62,6 +102,13 @@ impl Parser {
     }
 
     fn load_variables(&mut self, dict: HashMap<String, u64>) {
+        let binding = dict.clone();
+        let keys = binding.keys();
+        for key in keys {
+            if let Some(val) = self.variables.get_mut(key) {
+                *val += self.offset;
+            };
+        }
         self.variables.extend(dict.into_iter());
     }
 
