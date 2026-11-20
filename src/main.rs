@@ -180,7 +180,7 @@ impl Parser {
             "RET" => output.push(0x43),
 
             "LABEL" => {if let Some(val) = self.labels.get_mut(instructions[1]) {*val = self.binary.len() as u64}; output.push(0x44)},
-            "VAR" => {if let Some(val) = self.variables.get_mut(instructions[1]) {*val = self.binary.len() as u64}; output.push(0x45)},
+            "VAR" => {if let Some(val) = self.variables.get_mut(instructions[1]) {*val = self.binary.len() as u64}; output.push(0x45); output.push(0x00);},
             "PUSHVAR" => {if let Some(val) = self.variables.get_mut(instructions[1]) {output.push(0x46); output.push(*val)}}
             "POPVAR" => {if let Some(val) = self.variables.get_mut(instructions[1]) {output.push(0x47); output.push(*val)}},
 
