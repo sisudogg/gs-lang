@@ -263,6 +263,7 @@ impl Node {
         let mut ret: Vec<usize> = vec![];
         while i <= self.rule.len() {
             if let Some(code) = self.rule.get(i) {
+                println!("{}", code);
                 match code {
                     //basic codes
                     0x00 => {},
@@ -286,7 +287,7 @@ impl Node {
                     0x19 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a >> b % 64) }, //shR
 
                     //stack manipulation
-                    0x20 => { self.stack.push(*self.rule.get(i+1)?)} //push
+                    0x20 => { self.stack.push(*self.rule.get(i+1)?); i += 1;} //push
                     0x21 => { self.stack.pop(); } //pop
                     0x22 => { let a = self.stack.pop()?; self.stack.push(a); self.stack.push(a);} //dup
                     0x23 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a); self.stack.push(b);} //swap
@@ -315,8 +316,9 @@ impl Node {
                     42000000 => {self.flash(); break;},
                     _ => {},
                 }
-                i += 1;
+            
         }
+        i += 1;
         };
         Some(())
     }
