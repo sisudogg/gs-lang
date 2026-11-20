@@ -4,7 +4,7 @@
     "ghcr.io/devcontainers/features/rust:1": {
       "version": "latest",
       "profile": "complete"
-    }
+    },
   "runArgs": ["--oom-score-adj=200"]
   }
 }
