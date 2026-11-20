@@ -1,13 +1,12 @@
 use std::collections::HashMap;
-use std::env::var;
-use std::hash::Hash;
 use std::sync::{Arc, Mutex};
 use std::fs::{File};
-use std::io::{self, Write, Read};
+use std::io::{Write, Read};
 use savefile::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Hello, world!");
+    assemble(&String::from("new"), true)?;
+
     Ok(())
 }
 
@@ -53,6 +52,7 @@ impl Parser {
     }
 
     pub fn link(&mut self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
+        self.offset = self.binary.len() as u64;
         let mut bin_name = filename.clone();
         bin_name.push_str(".bin");
         let mut binfile = File::open(&bin_name)?;
@@ -76,7 +76,7 @@ impl Parser {
         variable_name.push_str(".var");
         let variable_dict: HashMap<String, u64> = load_file(variable_name, 0)?;
         
-        self.load_labels(label_dict);
+        self.load_labels(label_dict)?;
         self.load_variables(variable_dict);
         Ok(())
     }
