@@ -6,6 +6,9 @@ use savefile::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     assemble(&String::from("new"), true)?;
+    let mut node = Node::new(vec![], vec![]);
+    node.load(&String::from("new"))?;
+    node.run(vec![]);
 
     Ok(())
 }
@@ -134,7 +137,9 @@ impl Parser {
     }
 
     pub fn save(&self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
-        let mut outfile = File::create(filename)?;
+        let mut out_name = filename.clone();
+        out_name.push_str(".bin");
+        let mut outfile = File::create(out_name)?;
         let mut outvec: Vec<u8> = vec![];
         for num in self.get() {
             outvec.append(&mut Vec::from(num.to_le_bytes()));
@@ -216,6 +221,24 @@ impl Node {
         }
     }
 
+    pub fn load(&mut self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
+        let mut bin_name = filename.clone();
+        bin_name.push_str(".bin");
+        let mut binfile = File::open(&bin_name)?;
+        let mut readbytes = Vec::new();
+        binfile.read_to_end(&mut readbytes)?;
+
+        let mut parsed_vals = vec![];
+        for chunk in readbytes.chunks(8) {
+            if chunk.len() == 8 {
+                let arr: [u8; 8] = chunk.try_into()?;
+                parsed_vals.push(u64::from_le_bytes(arr));
+            }
+        }
+        self.rule = parsed_vals;
+        Ok(())
+    }
+
     pub fn forward(&mut self, mut data: Vec<u64>) -> Vec<u64> {
         self.stack.append(&mut data);
         self.execute();
@@ -270,7 +293,7 @@ impl Node {
 
                     //control flow            
                     0x40 => { i += *self.rule.get(i+1)? as usize }, //jmp
-                    0x41 => { if self.stack.pop()? == 0 { i += (*self.rule.get(i+1)? as usize); } }, //jz
+                    0x41 => { if self.stack.pop()? == 0 { i += *self.rule.get(i+1)? as usize; } }, //jz
                     0x42 => {ret.push(i); i = self.rule[i+1] as usize;  }, //call
                     0x43 => { i = ret.pop()? }, //return
 
@@ -305,7 +328,7 @@ impl Node {
 
     pub fn run (&mut self, data: Vec<u64>) -> Vec<u64> {
         let mut out_vec = vec![];
-        while let Some(a) = (self.downs.iter().next()) {
+        while let Some(a) = self.downs.iter().next() {
             let b = a;
             out_vec.append(&mut b.lock().unwrap().run(data.clone()));
         }
