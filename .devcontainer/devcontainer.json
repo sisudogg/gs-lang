@@ -1,4 +1,4 @@
 {
   "image": "mcr.microsoft.com/devcontainers/rust:1",
-  "runArgs": ["--oom-score-adj 0"],
+  "runArgs": ["--oom-score-adj 200"],
 }
