@@ -154,10 +154,11 @@ impl Parser {
         for line in self.assembly.split("\n") {
             let instructions: Vec<&str> = line.split(' ').collect();
             if instructions[0] == "LABEL" {
-                if let Some(val) = self.labels.get_mut(instructions[1]) {*val = length as u64}
+                self.labels.insert(instructions[1].to_string(), length as u64);
             }
             else if instructions[0] == "VAR" {
-                if let Some(val) = self.variables.get_mut(instructions[1]) {length += 1; *val = length as u64}
+                length += 1;
+                self.variables.insert(instructions[1].to_string(), length as u64);
             }
             else if instructions[0] == "PUSH" || instructions[0] == "JMP" || instructions[0] == "JZ" || instructions[0] == "CALL" || instructions[0] == "PUSHVAR" || instructions[0] == "POPVAR" {
                 length += 1
@@ -206,6 +207,7 @@ impl Parser {
             "PRINT8X8" => {output.push(0x51)},
             "PRINTC64" => {output.push(0x52)},
             "PRINTC8X8" => {output.push(0x53)},
+            "NEWLINE" => {output.push(0x54)},
 
             _ => { output.push(0x00) }
         }
@@ -281,7 +283,6 @@ impl Node {
         let mut ret: Vec<usize> = vec![];
         while i <= self.rule.len() {
             if let Some(code) = self.rule.get(i) {
-                println!("{}", code);
                 match code {
                     //basic codes
                     0x00 => {},
@@ -317,18 +318,19 @@ impl Node {
                     0x43 => { i = ret.pop()? }, //return
 
                     //Labels and variables
-                    0x44 => {println!("Reached Label @{}", i)}, //label
-                    0x45 => {i += 1; println!("Reached variable header @{}", i-1)}, //var //don't execute data of var
-                    0x46 => {self.stack.push(*self.rule.get(*self.rule.get(i+1)? as usize)?); println!("pushed variable to stack")}, //push variable to stack
-                    0x47 => {let index = *self.rule.get(i+1)? as usize; self.rule[index] = self.stack.pop()?; println!("set variable @{} to top of stack", self.rule[index])} //pop and write to variable
+                    0x44 => {}, //label
+                    0x45 => {i += 1;}, //var //don't execute data of var
+                    0x46 => {self.stack.push(*self.rule.get(*self.rule.get(i+1)? as usize)?); i += 1;}, //push variable to stack
+                    0x47 => {let index = *self.rule.get(i+1)? as usize; self.rule[index] = self.stack.pop()?; i += 1;} //pop and write to variable
                     //risky operation: 0x48 => { i += self.stack.pop()? as usize }, //jmps //Jump to index at top of stack
                     //risky operation: 0x49 => { if self.stack.pop()? == 0 { i += self.stack.pop()? as usize } }, //jzs //Jump to value 2nd of stack if 1st = 0
 
                     //Basic IO operations
                     0x50 => {print!("{}", self.stack.pop()?)},
-                    0x51 => {let bytes = self.stack.pop()?.to_le_bytes(); for num in bytes {print!("{}", num)}},
+                    0x51 => {let bytes = self.stack.pop()?.to_le_bytes(); for num in bytes {println!("{}", num)}},
                     0x52 => {},
-                    0x53 => {let bytes = self.stack.pop()?.to_le_bytes(); for num in bytes { print!("{}", char::from(num))}},
+                    0x53 => {let bytes = self.stack.pop()?.to_le_bytes(); for num in bytes { println!("{}", char::from(num))}},
+                    0x54 => println!(""),
 
 
                     42000000 => {self.flash(); break;},
