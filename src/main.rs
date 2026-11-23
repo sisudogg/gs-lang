@@ -318,9 +318,9 @@ impl Node {
 
                     //Labels and variables
                     0x44 => {println!("Reached Label @{}", i)}, //label
-                    0x45 => {i += 1}, //var //don't execute data of var
-                    0x46 => {self.stack.push(*self.rule.get(*self.rule.get(i+1)? as usize)?)}, //push variable to stack
-                    0x47 => {let index = *self.rule.get(i+1)? as usize; self.rule[index] = self.stack.pop()?} //pop and write to variable
+                    0x45 => {i += 1; println!("Reached variable header @{}", i-1)}, //var //don't execute data of var
+                    0x46 => {self.stack.push(*self.rule.get(*self.rule.get(i+1)? as usize)?); println!("pushed variable to stack")}, //push variable to stack
+                    0x47 => {let index = *self.rule.get(i+1)? as usize; self.rule[index] = self.stack.pop()?; println!("set variable @{} to top of stack", self.rule[index])} //pop and write to variable
                     //risky operation: 0x48 => { i += self.stack.pop()? as usize }, //jmps //Jump to index at top of stack
                     //risky operation: 0x49 => { if self.stack.pop()? == 0 { i += self.stack.pop()? as usize } }, //jzs //Jump to value 2nd of stack if 1st = 0
 
