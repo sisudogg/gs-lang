@@ -118,6 +118,7 @@ impl Parser {
     pub fn assemble(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let read: Vec<String> = self.assembly.split('\n').map(|s| s.to_string()).collect();
         let lines: Vec<&str> = read.iter().map(|s| s.as_str()).collect();
+        self.preprocess();
         for line in lines {
             self.parse(line)?;
         }
@@ -146,6 +147,23 @@ impl Parser {
         }
         outfile.write_all(&outvec)?;
         Ok(())
+    }
+
+    fn preprocess(&mut self) {
+        let mut length = self.binary.len();
+        for line in self.assembly.split("\n") {
+            let instructions: Vec<&str> = line.split(' ').collect();
+            if instructions[0] == "LABEL" {
+                if let Some(val) = self.labels.get_mut(instructions[1]) {*val = length as u64}
+            }
+            else if instructions[0] == "VAR" {
+                if let Some(val) = self.variables.get_mut(instructions[1]) {length += 1; *val = length as u64}
+            }
+            else if instructions[0] == "PUSH" || instructions[0] == "JMP" || instructions[0] == "JZ" || instructions[0] == "CALL" || instructions[0] == "PUSHVAR" || instructions[0] == "POPVAR" {
+                length += 1
+            }
+            length += 1;
+        }
     }
 
     pub fn parse(&mut self, line: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -179,10 +197,10 @@ impl Parser {
             "CALL" => {output.push(0x42); output.push(self.labels[instructions[1]])},
             "RET" => output.push(0x43),
 
-            "LABEL" => {if let Some(val) = self.labels.get_mut(instructions[1]) {*val = self.binary.len() as u64}; output.push(0x44)},
-            "VAR" => {if let Some(val) = self.variables.get_mut(instructions[1]) {*val = self.binary.len() as u64}; output.push(0x45); output.push(0x00);},
-            "PUSHVAR" => {if let Some(val) = self.variables.get_mut(instructions[1]) {output.push(0x46); output.push(*val)}}
-            "POPVAR" => {if let Some(val) = self.variables.get_mut(instructions[1]) {output.push(0x47); output.push(*val)}},
+            "LABEL" => {output.push(0x44);}, //{if let Some(val) = self.labels.get_mut(instructions[1]) {*val = self.binary.len() as u64}; output.push(0x44)},
+            "VAR" => {output.push(0x45); output.push(0x00);}, //{if let Some(val) = self.variables.get_mut(instructions[1]) {*val = self.binary.len() as u64}; output.push(0x45); output.push(0x00);},
+            "PUSHVAR" => {if let Some(val) = self.variables.get(instructions[1]) {output.push(0x46); output.push(*val)}}
+            "POPVAR" => {if let Some(val) = self.variables.get(instructions[1]) {output.push(0x47); output.push(*val)}},
 
             "PRINT64" => {output.push(0x50)},
             "PRINT8X8" => {output.push(0x51)},
@@ -293,8 +311,8 @@ impl Node {
                     0x23 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a); self.stack.push(b);} //swap
 
                     //control flow            
-                    0x40 => { i += *self.rule.get(i+1)? as usize }, //jmp
-                    0x41 => { if self.stack.pop()? == 0 { i += *self.rule.get(i+1)? as usize; } }, //jz
+                    0x40 => { i = *self.rule.get(i+1)? as usize }, //jmp
+                    0x41 => { if self.stack.pop()? == 0 { i = *self.rule.get(i+1)? as usize; } }, //jz
                     0x42 => {ret.push(i); i = self.rule[i+1] as usize;  }, //call
                     0x43 => { i = ret.pop()? }, //return
 
@@ -340,7 +358,4 @@ impl Node {
         self.forward(out_vec)
     }
 }
-
-
-
 
