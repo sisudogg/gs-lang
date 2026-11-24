@@ -1,38 +1,108 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::fs::{File};
-use std::io::{Write, Read};
+use std::io::{Write, Read, stdin};
 use savefile::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    assemble(&String::from("new"), true)?;
-    let mut node = Node::new(vec![], vec![]);
-    node.load(&String::from("new"))?;
-    node.run(vec![]);
+
+    let mut filenames: Vec<String> = vec![];
+    loop {
+        print!("Enter assembly file name (blank to quit): ");
+        let mut outstring: String = "".to_owned();
+        stdin().read_to_string(&mut outstring)?;
+        outstring.strip_suffix('\n').unwrap();
+        if outstring == "" {
+            break;
+        }
+        filenames.push(outstring.to_owned());
+    }
+    let mut parser = Parser::new();
+    for filename in filenames.into_iter() {
+        parser.load(&filename)?;
+    }
+    let mut binfiles: Vec<String> = vec![];
+    loop {
+        print!("Enter binary file name (blank to quit): ");
+        let mut outstring: String = "".to_owned();
+        stdin().read_to_string(&mut outstring)?;
+        outstring.strip_suffix('\n').unwrap();
+        if outstring == "" {
+            break;
+        }
+        binfiles.push(outstring.to_owned());
+    }
+
+    for binfile in binfiles.into_iter() {
+        parser.link(&binfile)?;
+    }
+
+    parser.assemble()?;
+
+    let mut outfile = String::new();
+    print!("Enter output file name: ");
+    let mut binstring: String = outfile.clone();
+    binstring.push_str(".bin");
+    stdin().read_to_string(&mut outfile)?;
+    outfile.strip_suffix('\n').unwrap();
+
+    parser.save(&outfile)?;
+    println!("Saved binary opcode output to ./{}", outfile);
+
+    let mut labelstring: String = outfile.clone();
+    labelstring.push_str(".label");
+    let mut varstring: String = outfile.clone();
+    varstring.push_str(".var");
+
+    save_file(labelstring, 0, &parser.get_labels())?;
+    save_file(varstring, 0, &parser.get_variables())?;
+
+    print!("Select file to run (blank to quit): ");
+    let mut outstring = String::new();
+    stdin().read_to_string(&mut outstring)?;
+    outstring.strip_suffix('\n').unwrap();
+
+    let mut root = Node::blank();
+    root.load(&outstring)?;
+
+    let mut data: Vec<u64> = vec![];
+
+    loop {
+        print!("Enter u64 value for initial data (blank to quit): ");
+        let mut outint: String = "".to_owned();
+        stdin().read_to_string(&mut outint)?;
+        outint.strip_suffix('\n').unwrap();
+        if outint == "" {
+            break;
+        }
+        data.push(outint.parse::<u64>()?);
+    }
+
+    root.run(data);
 
     Ok(())
 }
 
-fn assemble(filename: &String, linkable: bool) -> Result<String, Box<dyn std::error::Error>> {
-    let mut parser = Parser::new();
-    parser.load(&filename)?;
-    parser.assemble()?;
-    let mut outname = filename.clone();
-    outname = outname.trim_suffix(".asm").to_string();
-    parser.save(&outname)?;
-    if linkable {
-        let mut label_name = filename.clone();
-        label_name.push_str(".label");
-        save_file(label_name, 0, &parser.get_labels())?;
-
-
-        let mut variable_name = filename.clone();
-        variable_name.push_str(".var");
-        save_file(variable_name, 0, &parser.get_variables())?;
-
-    }
-    Ok(outname)
-}
+// fn assemble(filename: &String, linkable: bool) -> Result<String, Box<dyn std::error::Error>> {
+//     let mut parser = Parser::new();
+//     parser.load(&filename)?;
+//     parser.assemble()?;
+//     let mut outname = filename.clone();
+//     outname = outname.strip_suffix(".asm").unwrap().to_string();
+//     parser.save(&outname)?;
+//     if linkable {
+//         let mut label_name = filename.clone();
+//         label_name.push_str(".label");
+//         save_file(label_name, 0, &parser.get_labels())?;
+//
+//
+//         let mut variable_name = filename.clone();
+//         variable_name.push_str(".var");
+//         save_file(variable_name, 0, &parser.get_variables())?;
+//
+//     }
+//     Ok(outname)
+// }
 
 
 struct Parser {
@@ -235,9 +305,17 @@ impl Clone for Node {
 impl Node {
     pub fn new(rule: Vec<u64>, subordinates: Vec<Arc<Mutex<Node>>>) -> Node {
         Node {
-            rule: rule,
+            rule,
             stack: vec![],
             downs: subordinates,
+        }
+    }
+
+    pub fn blank() -> Node {
+        Node {
+            rule: vec![],
+            stack: vec![],
+            downs: vec![],
         }
     }
 
@@ -330,7 +408,7 @@ impl Node {
                     0x51 => {let bytes = self.stack.pop()?.to_le_bytes(); for num in bytes {println!("{}", num)}},
                     0x52 => {},
                     0x53 => {let bytes = self.stack.pop()?.to_le_bytes(); for num in bytes { println!("{}", char::from(num))}},
-                    0x54 => println!(""),
+                    0x54 => println!(),
 
 
                     42000000 => {self.flash(); break;},
