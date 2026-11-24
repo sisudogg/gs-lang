@@ -1,18 +1,21 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::fs::{File};
+use std::io;
 use std::io::{Write, Read, stdin};
 use savefile::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     let mut filenames: Vec<String> = vec![];
+    let mut out = io::stdout();
     loop {
         print!("Enter assembly file name (blank to quit): ");
+        out.flush()?;
         let mut outstring: String = "".to_owned();
         stdin().read_to_string(&mut outstring)?;
         outstring.strip_suffix('\n').unwrap();
-        if outstring == "" {
+        let outstring = outstring.trim_end_matches(['\r', '\n']).to_string();
+        if outstring.is_empty() {
             break;
         }
         filenames.push(outstring.to_owned());
@@ -24,10 +27,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut binfiles: Vec<String> = vec![];
     loop {
         print!("Enter binary file name (blank to quit): ");
+        out.flush()?;
         let mut outstring: String = "".to_owned();
         stdin().read_to_string(&mut outstring)?;
-        outstring.strip_suffix('\n').unwrap();
-        if outstring == "" {
+        let outstring = outstring.trim_end_matches(['\r', '\n']).to_string();
+        if outstring.is_empty() {
             break;
         }
         binfiles.push(outstring.to_owned());
@@ -41,9 +45,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut outfile = String::new();
     print!("Enter output file name: ");
+    stdin().read_to_string(&mut outfile)?;
+    let outfile = outfile.trim_end_matches(['\r', '\n']).to_string();
     let mut binstring: String = outfile.clone();
     binstring.push_str(".bin");
-    stdin().read_to_string(&mut outfile)?;
+
     outfile.strip_suffix('\n').unwrap();
 
     parser.save(&outfile)?;
@@ -69,10 +75,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         print!("Enter u64 value for initial data (blank to quit): ");
+        out.flush()?;
         let mut outint: String = "".to_owned();
         stdin().read_to_string(&mut outint)?;
         outint.strip_suffix('\n').unwrap();
-        if outint == "" {
+        if outint.is_empty() {
             break;
         }
         data.push(outint.parse::<u64>()?);
