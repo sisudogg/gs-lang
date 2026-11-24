@@ -1,12 +1,10 @@
-mod tree;
-
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::fs::{File};
 use std::io;
 use std::io::{Write, Read, stdin};
 use savefile::prelude::*;
-use crate::tree::{};
+
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut filenames: Vec<String> = vec![];
@@ -93,26 +91,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// fn assemble(filename: &String, linkable: bool) -> Result<String, Box<dyn std::error::Error>> {
-//     let mut parser = Parser::new();
-//     parser.load(&filename)?;
-//     parser.assemble()?;
-//     let mut outname = filename.clone();
-//     outname = outname.strip_suffix(".asm").unwrap().to_string();
-//     parser.save(&outname)?;
-//     if linkable {
-//         let mut label_name = filename.clone();
-//         label_name.push_str(".label");
-//         save_file(label_name, 0, &parser.get_labels())?;
-//
-//
-//         let mut variable_name = filename.clone();
-//         variable_name.push_str(".var");
-//         save_file(variable_name, 0, &parser.get_variables())?;
-//
-//     }
-//     Ok(outname)
-// }
+
 
 
 struct Parser {
@@ -121,6 +100,8 @@ struct Parser {
     assembly: String,
     variables: HashMap<String, u64>,
     offset: u64,
+    source: Vec<String>,
+    functions: Vec<String>,
 }
 
 impl Parser {
@@ -131,6 +112,8 @@ impl Parser {
             assembly: String::new(),
             variables: HashMap::new(),
             offset: 0,
+            source: vec![],
+            functions: vec![],
         }
     }
 
@@ -171,6 +154,17 @@ impl Parser {
     pub fn get_variables(&self) -> HashMap<String, u64> {
         self.variables.clone()
     }
+
+    pub fn load_source(&mut self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
+        let mut outfile = filename.clone();
+        outfile.push_str(".c");
+        let mut outfile = File::open(outfile)?;
+        let mut output = String::new();
+        outfile.read_to_string(&mut output)?;
+        self.source.push(output);
+        Ok(())
+    }
+
 
     fn load_labels(&mut self, dict: HashMap<String, u64>) -> Result<(), Box<dyn std::error::Error>> {
         let binding = dict.clone();
@@ -218,7 +212,7 @@ impl Parser {
     }
 
     pub fn save(&self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
-        let mut out_name = filename.clone();
+        let out_name = filename.clone();
         //out_name.push_str(".bin");
         let mut outfile = File::create(out_name)?;
         let mut outvec: Vec<u8> = vec![];
@@ -450,14 +444,4 @@ impl Node {
     }
 }
 
-struct Compiler {
 
-}
-
-impl Compiler {
-    pub fn new() -> Compiler {
-        Compiler {
-
-        }
-    }
-}
