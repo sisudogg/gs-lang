@@ -143,7 +143,7 @@ impl Parser {
         for chunk in readbytes.chunks(8) {
             if chunk.len() == 8 {
                 let arr: [u8; 8] = chunk.try_into()?;
-                parsed_vals.push(u64::from_le_bytes(arr));
+                parsed_vals.push(u64::from_be_bytes(arr));
             }
         }
 
@@ -220,7 +220,7 @@ impl Parser {
         let mut outfile = File::create(out_name)?;
         let mut outvec: Vec<u8> = vec![];
         for num in self.get() {
-            outvec.append(&mut Vec::from(num.to_le_bytes()));
+            outvec.append(&mut Vec::from(num.to_be_bytes()));
         }
         outfile.write_all(&outvec)?;
         Ok(())
@@ -338,7 +338,7 @@ impl Node {
         for chunk in readbytes.chunks(8) {
             if chunk.len() == 8 {
                 let arr: [u8; 8] = chunk.try_into()?;
-                parsed_vals.push(u64::from_le_bytes(arr));
+                parsed_vals.push(u64::from_be_bytes(arr));
             }
         }
         self.rule = parsed_vals;
@@ -413,9 +413,9 @@ impl Node {
 
                     //Basic IO operations
                     0x50 => {print!("{}", self.stack.pop()?)},
-                    0x51 => {let bytes = self.stack.pop()?.to_le_bytes(); for num in bytes {println!("{}", num)}},
+                    0x51 => {let bytes = self.stack.pop()?.to_be_bytes(); for num in bytes {println!("{}", num)}},
                     0x52 => {},
-                    0x53 => {let bytes = self.stack.pop()?.to_le_bytes(); for num in bytes { println!("{}", char::from(num))}},
+                    0x53 => {let bytes = self.stack.pop()?.to_be_bytes(); for num in bytes { println!("{}", char::from(num))}},
                     0x54 => println!(),
 
 
