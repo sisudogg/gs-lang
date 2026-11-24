@@ -11,9 +11,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         print!("Enter assembly file name (blank to quit): ");
         out.flush()?;
-        let mut outstring: String = "".to_owned();
+        let mut outstring = String::new();
         stdin().read_to_string(&mut outstring)?;
-        outstring.strip_suffix('\n').unwrap();
         let outstring = outstring.trim_end_matches(['\r', '\n']).to_string();
         if outstring.is_empty() {
             break;
@@ -28,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         print!("Enter binary file name (blank to quit): ");
         out.flush()?;
-        let mut outstring: String = "".to_owned();
+        let mut outstring = String::new();
         stdin().read_to_string(&mut outstring)?;
         let outstring = outstring.trim_end_matches(['\r', '\n']).to_string();
         if outstring.is_empty() {
