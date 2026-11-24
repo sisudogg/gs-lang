@@ -1,9 +1,12 @@
+mod tree;
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::fs::{File};
 use std::io;
 use std::io::{Write, Read, stdin};
 use savefile::prelude::*;
+use crate::tree::{};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut filenames: Vec<String> = vec![];
@@ -447,3 +450,14 @@ impl Node {
     }
 }
 
+struct Compiler {
+
+}
+
+impl Compiler {
+    pub fn new() -> Compiler {
+        Compiler {
+
+        }
+    }
+}
