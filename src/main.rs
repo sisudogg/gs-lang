@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         print!("Enter assembly file name (blank to quit): ");
         out.flush()?;
         let mut outstring = String::new();
-        stdin().read_to_string(&mut outstring)?;
+        stdin().read_line(&mut outstring)?;
         let outstring = outstring.trim_end_matches(['\r', '\n']).to_string();
         if outstring.is_empty() {
             break;
@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         print!("Enter binary file name (blank to quit): ");
         out.flush()?;
         let mut outstring = String::new();
-        stdin().read_to_string(&mut outstring)?;
+        stdin().read_line(&mut outstring)?;
         let outstring = outstring.trim_end_matches(['\r', '\n']).to_string();
         if outstring.is_empty() {
             break;
@@ -44,15 +44,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut outfile = String::new();
     print!("Enter output file name: ");
-    stdin().read_to_string(&mut outfile)?;
+    out.flush()?;
+    stdin().read_line(&mut outfile)?;
     let outfile = outfile.trim_end_matches(['\r', '\n']).to_string();
     let mut binstring: String = outfile.clone();
     binstring.push_str(".bin");
 
-    outfile.strip_suffix('\n').unwrap();
 
-    parser.save(&outfile)?;
-    println!("Saved binary opcode output to ./{}", outfile);
+    parser.save(&binstring)?;
+    println!("Saved binary opcode output to ./{}", binstring);
 
     let mut labelstring: String = outfile.clone();
     labelstring.push_str(".label");
@@ -63,12 +63,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     save_file(varstring, 0, &parser.get_variables())?;
 
     print!("Select file to run (blank to quit): ");
+    out.flush()?;
     let mut outstring = String::new();
-    stdin().read_to_string(&mut outstring)?;
-    outstring.strip_suffix('\n').unwrap();
+    stdin().read_line(&mut outstring)?;
+    let outfile = outstring.trim_end_matches(['\r', '\n']).to_string();
 
     let mut root = Node::blank();
-    root.load(&outstring)?;
+    root.load(&outfile)?;
 
     let mut data: Vec<u64> = vec![];
 
@@ -76,8 +77,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         print!("Enter u64 value for initial data (blank to quit): ");
         out.flush()?;
         let mut outint: String = "".to_owned();
-        stdin().read_to_string(&mut outint)?;
-        outint.strip_suffix('\n').unwrap();
+        stdin().read_line(&mut outint)?;
+        let outint = outint.trim_end_matches(['\r', '\n']).to_string();
         if outint.is_empty() {
             break;
         }
@@ -215,7 +216,7 @@ impl Parser {
 
     pub fn save(&self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
         let mut out_name = filename.clone();
-        out_name.push_str(".bin");
+        //out_name.push_str(".bin");
         let mut outfile = File::create(out_name)?;
         let mut outvec: Vec<u8> = vec![];
         for num in self.get() {
@@ -249,6 +250,7 @@ impl Parser {
         match instructions[0] {
             "SKIP" => output.push(0x00),
             "HALT" => output.push(0x01),
+            "HLT" => output.push(0x01),
             "PSH0" => output.push(0x02),
 
             "ADD" => output.push(0x10),
@@ -328,7 +330,7 @@ impl Node {
     pub fn load(&mut self, filename: &String) -> Result<(), Box<dyn std::error::Error>> {
         let mut bin_name = filename.clone();
         bin_name.push_str(".bin");
-        let mut binfile = File::open(&bin_name)?;
+        let mut binfile = File::open(&bin_name).expect(format!("Failed to open file {}", bin_name).as_str());
         let mut readbytes = Vec::new();
         binfile.read_to_end(&mut readbytes)?;
 
