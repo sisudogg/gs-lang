@@ -395,10 +395,10 @@ impl Node {
                     0x23 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a); self.stack.push(b); println!("swap")} //swap
 
                     //control flow            
-                    0x40 => { i = *self.rule.get(i+1)? as usize; println!("jmp") }, //jmp
-                    0x41 => { if self.stack.pop()? == 0 { i = *self.rule.get(i+1)? as usize; }; println!("jz") }, //jz
-                    0x42 => {ret.push(i); i = self.rule[i+1] as usize; println!("call") }, //call
-                    0x43 => { i = ret.pop()?; println!("ret") }, //return
+                    0x40 => { i = *self.rule.get(i+1)? as usize }, //jmp
+                    0x41 => { if self.stack.pop()? == 0 { i = *self.rule.get(i+1)? as usize; } }, //jz
+                    0x42 => {ret.push(i); i = self.rule[i+1] as usize;  }, //call
+                    0x43 => { i = ret.pop()? }, //return
 
                     //Labels and variables
                     0x44 => {}, //label
