@@ -396,8 +396,8 @@ impl Node {
 
                     //control flow            
                     0x40 => { i = *self.rule.get(i+1)? as usize }, //jmp
-                    0x41 => { if self.stack.pop()? == 0 { i = *self.rule.get(i+1)? as usize; } }, //jz
-                    0x42 => {ret.push(i); i = self.rule[i+1] as usize;  }, //call
+                    0x41 => { if self.stack.pop()? == 0 { i = *self.rule.get(i+1)? as usize; } else {i += 1}}, //jz
+                    0x42 => {ret.push(i+2); i = self.rule[i+1] as usize;  }, //call
                     0x43 => { i = ret.pop()? }, //return
 
                     //Labels and variables
