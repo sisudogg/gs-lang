@@ -368,37 +368,37 @@ impl Node {
             if let Some(code) = self.rule.get(i) {
                 match code {
                     //basic codes
-                    0x00 => {},
-                    0x01 => {break; }
-                    0x02 => {self.stack.push(0)}
+                    0x00 => {println!("pass")},
+                    0x01 => {; println!("break"); break; }
+                    0x02 => {self.stack.push(0); println!("PSH0")}
                     
                     //arithmetic
-                    0x10 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a + b) }, //add
-                    0x11 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a - b) }, //sub
-                    0x12 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a * b) }, //mul
-                    0x13 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a / b) }, //div
+                    0x10 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a + b); println!("add") }, //add
+                    0x11 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a - b); println!("sub") }, //sub
+                    0x12 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a * b); println!("mul") }, //mul
+                    0x13 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a / b); println!("div") }, //div
 
                     //bitwise
-                    0x14 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a & b) }, //andB
-                    0x15 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a | b) }, //orB
-                    0x16 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a ^ b) }, //xorB
+                    0x14 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a & b); println!("andB") }, //andB
+                    0x15 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a | b); println!("orB") }, //orB
+                    0x16 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a ^ b); println!("xorB") }, //xorB
                     0x17 => { let a = self.stack.pop()?; self.stack.push(!a) }, //notB
 
                     //bitshift
-                    0x18 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a << b % 64) }, //shL
-                    0x19 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a >> b % 64) }, //shR
+                    0x18 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a << b % 64); println!("shL") }, //shL
+                    0x19 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a >> b % 64); println!("shR") }, //shR
 
                     //stack manipulation
-                    0x20 => { self.stack.push(*self.rule.get(i+1)?); i += 1;} //push
-                    0x21 => { self.stack.pop(); } //pop
-                    0x22 => { let a = self.stack.pop()?; self.stack.push(a); self.stack.push(a);} //dup
-                    0x23 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a); self.stack.push(b);} //swap
+                    0x20 => { self.stack.push(*self.rule.get(i+1)?); i += 1; println!("push")} //push
+                    0x21 => { self.stack.pop(); println!("pop") } //pop
+                    0x22 => { let a = self.stack.pop()?; self.stack.push(a); self.stack.push(a); println!("dup")} //dup
+                    0x23 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a); self.stack.push(b); println!("swap")} //swap
 
                     //control flow            
-                    0x40 => { i = *self.rule.get(i+1)? as usize }, //jmp
-                    0x41 => { if self.stack.pop()? == 0 { i = *self.rule.get(i+1)? as usize; } }, //jz
-                    0x42 => {ret.push(i); i = self.rule[i+1] as usize;  }, //call
-                    0x43 => { i = ret.pop()? }, //return
+                    0x40 => { i = *self.rule.get(i+1)? as usize; println!("jmp") }, //jmp
+                    0x41 => { if self.stack.pop()? == 0 { i = *self.rule.get(i+1)? as usize; }; println!("jz") }, //jz
+                    0x42 => {ret.push(i); i = self.rule[i+1] as usize; println!("call") }, //call
+                    0x43 => { i = ret.pop()?; println!("ret") }, //return
 
                     //Labels and variables
                     0x44 => {}, //label
