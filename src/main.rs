@@ -395,16 +395,16 @@ impl Node {
                     0x23 => { let a = self.stack.pop()?; let b = self.stack.pop()?; self.stack.push(a); self.stack.push(b); println!("swap")} //swap
 
                     //control flow            
-                    0x40 => { i = *self.rule.get(i+1)? as usize }, //jmp
-                    0x41 => { if self.stack.pop()? == 0 { i = *self.rule.get(i+1)? as usize; } }, //jz
-                    0x42 => {ret.push(i); i = self.rule[i+1] as usize;  }, //call
-                    0x43 => { i = ret.pop()? }, //return
+                    0x40 => { i = *self.rule.get(i+1)? as usize; println!("jmp") }, //jmp
+                    0x41 => { if self.stack.pop()? == 0 { i = *self.rule.get(i+1)? as usize; }; println!("jz") }, //jz
+                    0x42 => {ret.push(i); i = self.rule[i+1] as usize; println!("call")  }, //call
+                    0x43 => { i = ret.pop()?; println!("ret") }, //return
 
                     //Labels and variables
-                    0x44 => {}, //label
-                    0x45 => {i += 1;}, //var //don't execute data of var
-                    0x46 => {self.stack.push(*self.rule.get(*self.rule.get(i+1)? as usize)?); i += 1;}, //push variable to stack
-                    0x47 => {let index = *self.rule.get(i+1)? as usize; self.rule[index] = self.stack.pop()?; i += 1;} //pop and write to variable
+                    0x44 => {; println!("label")}, //label
+                    0x45 => {i += 1; println!("var")}, //var //don't execute data of var
+                    0x46 => {self.stack.push(*self.rule.get(*self.rule.get(i+1)? as usize)?); i += 1; println!("pushvar")}, //push variable to stack
+                    0x47 => {let index = *self.rule.get(i+1)? as usize; self.rule[index] = self.stack.pop()?; i += 1; println!("popvar")} //pop and write to variable
                     //risky operation: 0x48 => { i += self.stack.pop()? as usize }, //jmps //Jump to index at top of stack
                     //risky operation: 0x49 => { if self.stack.pop()? == 0 { i += self.stack.pop()? as usize } }, //jzs //Jump to value 2nd of stack if 1st = 0
 
